@@ -88,6 +88,10 @@ pub mod io;
 pub mod status;
 pub mod unstable_opts;
 
+// WebAssembly interface module
+#[cfg(all(target_wasm, feature = "wasm"))]
+pub mod wasm;
+
 // Note: this module is intentionally *not* gated by #[cfg(test)] -- see its
 // docstring for details.
 #[doc(hidden)]

@@ -448,6 +448,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "console_error_panic_hook"
+version = "0.1.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a06aeb73f470f66dcdbf7223caeebb85984942f22f1adb2a088cf9668146bbbc"
+dependencies = [
+ "cfg-if",
+ "wasm-bindgen",
+]
+
+[[package]]
 name = "core-foundation"
 version = "0.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2608,6 +2618,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "serde-wasm-bindgen"
+version = "0.6.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8302e169f0eddcc139c70f139d19d6467353af16f9fce27e8c30158036a1e16b"
+dependencies = [
+ "js-sys",
+ "serde",
+ "wasm-bindgen",
+]
+
+[[package]]
 name = "serde_derive"
 version = "1.0.217"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2848,18 +2869,22 @@ name = "tectonic"
 version = "0.0.0-dev.0"
 dependencies = [
  "anyhow",
+ "base64",
  "byte-unit",
  "cfg-if",
  "clap",
  "clap_complete",
+ "console_error_panic_hook",
  "error-chain",
  "filetime",
  "flate2",
+ "js-sys",
  "lazy_static",
  "open",
  "quick-xml",
  "regex",
  "serde",
+ "serde-wasm-bindgen",
  "sha2",
  "tar",
  "tectonic_bridge_core",
@@ -2882,10 +2907,12 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "walkdir",
+ "wasm-bindgen",
  "watchexec",
  "watchexec-filterer-globset",
  "watchexec-signals",
  "watchexec-supervisor",
+ "web-sys",
  "zip",
 ]
 
