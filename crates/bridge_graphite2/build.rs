@@ -20,40 +20,47 @@ impl Spec for Graphite2Spec {
 }
 
 fn main() {
-    let cfg = Configuration::default();
-    let dep = Dependency::probe(Graphite2Spec, &cfg);
-
-    // This is the key. What we print here will be propagated into depending
-    // crates' build scripts as the environment variable
-    // DEP_GRAPHITE2_INCLUDE_PATH, allowing them to find the headers internally.
-    // If/when we start vendoring graphite2, this can become $OUT_DIR.
-
-    let mut sep = "cargo:include-path=";
-
-    dep.foreach_include_path(|p| {
-        print!("{}{}", sep, p.to_str().unwrap());
-        sep = ";";
-    });
-
-    println!();
-
-    dep.emit();
-
-    // As a special case, code that compiles against graphite2 must also
-    // sometimes provide -DGRAPHITE2_STATIC. We'd prefer not to get into the
-    // business of propagating arbitrary cflags through our build system, so we
-    // indicate it with a specialized variable.
-
     let target = env::var("TARGET").unwrap();
 
-    let rustflags = env::var("CARGO_ENCODED_RUSTFLAGS")
-        .unwrap_or_else(|_| env::var("RUSTFLAGS").unwrap_or_default());
+    // Skip system dependency probing for WASM targets
+    if !target.starts_with("wasm32") {
+        let cfg = Configuration::default();
+        let dep = Dependency::probe(Graphite2Spec, &cfg);
 
-    let define_static_flag = if target.contains("-msvc") && rustflags.contains("+crt-static") {
-        "1"
+        // This is the key. What we print here will be propagated into depending
+        // crates' build scripts as the environment variable
+        // DEP_GRAPHITE2_INCLUDE_PATH, allowing them to find the headers internally.
+        // If/when we start vendoring graphite2, this can become $OUT_DIR.
+
+        let mut sep = "cargo:include-path=";
+
+        dep.foreach_include_path(|p| {
+            print!("{}{}", sep, p.to_str().unwrap());
+            sep = ";";
+        });
+
+        println!();
+
+        dep.emit();
+
+        // As a special case, code that compiles against graphite2 must also
+        // sometimes provide -DGRAPHITE2_STATIC. We'd prefer not to get into the
+        // business of propagating arbitrary cflags through our build system, so we
+        // indicate it with a specialized variable.
+
+        let rustflags = env::var("CARGO_ENCODED_RUSTFLAGS")
+            .unwrap_or_else(|_| env::var("RUSTFLAGS").unwrap_or_default());
+
+        let define_static_flag = if target.contains("-msvc") && rustflags.contains("+crt-static") {
+            "1"
+        } else {
+            ""
+        };
+
+        println!("cargo:define_static={define_static_flag}");
     } else {
-        ""
-    };
-
-    println!("cargo:define_static={define_static_flag}");
+        // For WASM targets, provide minimal stubs
+        println!("cargo:include-path=");
+        println!("cargo:define_static=");
+    }
 }

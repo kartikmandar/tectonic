@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tectonic WASM Engine Test</title>
+    <style>
+        body {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1e1e1e;
+            color: #d4d4d4;
+        }
+        
+        .container {
+            background: #252526;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 10px 0;
+        }
+        
+        h1 {
+            color: #569cd6;
+            text-align: center;
+        }
+        
+        h2 {
+            color: #4ec9b0;
+            border-bottom: 1px solid #404040;
+            padding-bottom: 5px;
+        }
+        
+        button {
+            background: #007acc;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        
+        button:hover {
+            background: #005a9e;
+        }
+        
+        button:disabled {
+            background: #404040;
+            cursor: not-allowed;
+        }
+        
+        .success {
+            color: #4caf50;
+        }
+        
+        .error {
+            color: #f44336;
+        }
+        
+        .info {
+            color: #2196f3;
+        }
+        
+        textarea {
+            width: 100%;
+            height: 200px;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            border: 1px solid #404040;
+            border-radius: 4px;
+            padding: 10px;
+            font-family: inherit;
+            resize: vertical;
+        }
+        
+        pre {
+            background: #1e1e1e;
+            border: 1px solid #404040;
+            border-radius: 4px;
+            padding: 15px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+        }
+        
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        
+        .status.loading {
+            background: #ffecb3;
+            color: #663c00;
+        }
+        
+        .status.success {
+            background: #c8e6c9;
+            color: #1b5e20;
+        }
+        
+        .status.error {
+            background: #ffcdd2;
+            color: #c62828;
+        }
+    </style>
+</head>
+<body>
+    <h1>🦀 Tectonic WASM Engine Test</h1>
+    
+    <div class="container">
+        <h2>Engine Status</h2>
+        <div id="status" class="status loading">Loading WASM module...</div>
+        <button id="init-btn" onclick="testInit()">Initialize Engine</button>
+        <button id="version-btn" onclick="testVersion()" disabled>Get Version</button>
+        <button id="simd-btn" onclick="testSIMD()" disabled>Check SIMD</button>
+        <button id="perf-btn" onclick="testPerformance()" disabled>Performance Info</button>
+    </div>
+    
+    <div class="container">
+        <h2>LaTeX Compilation Test</h2>
+        <textarea id="latex-input" placeholder="Enter LaTeX source code here...">\\documentclass{article}
+\\begin{document}
+Hello, WASM world! This is compiled by Tectonic in WebAssembly.
+
+\\section{Features}
+\\begin{itemize}
+    \\item Real-time compilation
+    \\item SIMD optimization
+    \\item Character-level tracking (coming soon)
+    \\item Incremental updates (coming soon)
+\\end{itemize}
+
+The quick brown fox jumps over the lazy dog. \\textbf{Bold text} and \\textit{italic text}.
+
+$$E = mc^2$$
+
+\\end{document}</textarea>
+        <br>
+        <button id="compile-btn" onclick="testCompilation()" disabled>Compile LaTeX</button>
+        <button id="test-btn" onclick="testWasm()" disabled>Test WASM</button>
+        
+        <h3>Compilation Result:</h3>
+        <pre id="compile-result">No compilation yet...</pre>
+    </div>
+    
+    <div class="container">
+        <h2>Console Output</h2>
+        <pre id="console-output"></pre>
+    </div>
+
+    <script type="module">
+        import init, * as wasm from './pkg-scalar/tectonic_wasm.js';
+        
+        let wasmModule = null;
+        let consoleOutput = document.getElementById('console-output');
+        
+        // Capture console output
+        const originalLog = console.log;
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            consoleOutput.textContent += args.join(' ') + '\\n';
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        };
+        
+        const originalError = console.error;
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            consoleOutput.textContent += '[ERROR] ' + args.join(' ') + '\\n';
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        };
+        
+        // Initialize WASM module
+        async function initWasm() {
+            try {
+                console.log('🚀 Initializing Tectonic WASM module...');
+                await init();
+                wasmModule = wasm;
+                
+                // Enable buttons
+                document.getElementById('init-btn').disabled = false;
+                document.getElementById('version-btn').disabled = false;
+                document.getElementById('simd-btn').disabled = false;
+                document.getElementById('perf-btn').disabled = false;
+                document.getElementById('compile-btn').disabled = false;
+                document.getElementById('test-btn').disabled = false;
+                
+                document.getElementById('status').className = 'status success';
+                document.getElementById('status').textContent = '✅ WASM module loaded successfully!';
+                
+                console.log('✅ Tectonic WASM module initialized successfully!');
+                
+                // Auto-run some tests
+                testVersion();
+                testSIMD();
+                testPerformance();
+                
+            } catch (error) {
+                console.error('❌ Failed to initialize WASM module:', error);
+                document.getElementById('status').className = 'status error';
+                document.getElementById('status').textContent = '❌ Failed to load WASM module: ' + error.message;
+            }
+        }
+        
+        // Export functions to global scope for button handlers
+        window.testInit = function() {
+            if (wasmModule) {
+                try {
+                    console.log('🔄 Re-initializing WASM module...');
+                    wasmModule.init();
+                    console.log('✅ WASM module re-initialized!');
+                } catch (error) {
+                    console.error('❌ Re-initialization failed:', error);
+                }
+            }
+        };
+        
+        window.testVersion = function() {
+            if (wasmModule) {
+                try {
+                    const version = wasmModule.version();
+                    console.log('📦 Tectonic WASM version:', version);
+                } catch (error) {
+                    console.error('❌ Version check failed:', error);
+                }
+            }
+        };
+        
+        window.testSIMD = function() {
+            if (wasmModule) {
+                try {
+                    const simdAvailable = wasmModule.simd_available();
+                    console.log('⚡ SIMD available:', simdAvailable);
+                } catch (error) {
+                    console.error('❌ SIMD check failed:', error);
+                }
+            }
+        };
+        
+        window.testPerformance = function() {
+            if (wasmModule) {
+                try {
+                    const perfInfo = wasmModule.get_performance_info();
+                    console.log('📊 Performance info:', perfInfo);
+                } catch (error) {
+                    console.error('❌ Performance check failed:', error);
+                }
+            }
+        };
+        
+        window.testWasm = function() {
+            if (wasmModule) {
+                try {
+                    const result = wasmModule.test_wasm();
+                    console.log('🧪 WASM test result:', result);
+                } catch (error) {
+                    console.error('❌ WASM test failed:', error);
+                }
+            }
+        };
+        
+        window.testCompilation = function() {
+            if (wasmModule) {
+                try {
+                    const latexSource = document.getElementById('latex-input').value;
+                    const resultDiv = document.getElementById('compile-result');
+                    
+                    console.log('🔨 Starting LaTeX compilation...');
+                    resultDiv.textContent = 'Compiling...';
+                    
+                    const startTime = performance.now();
+                    
+                    // Create compilation options
+                    const options = {
+                        use_simd: true,
+                        incremental: false,
+                        track_positions: false,
+                        format: 'latex',
+                        timeout_ms: 5000
+                    };
+                    
+                    const result = wasmModule.compile_latex(latexSource, JSON.stringify(options));
+                    const endTime = performance.now();
+                    
+                    console.log('📝 Compilation completed in', (endTime - startTime).toFixed(2), 'ms');
+                    console.log('📄 Compilation result:', result);
+                    
+                    // Display result
+                    if (result.success) {
+                        resultDiv.innerHTML = `
+                            <span class="success">✅ Compilation Successful!</span>
+                            
+                            Duration: ${result.duration_ms.toFixed(2)}ms
+                            SIMD Used: ${result.used_simd}
+                            Page Count: ${result.page_count}
+                            Memory Used: ${result.memory_used} bytes
+                            
+                            Warnings: ${result.warnings.length}
+                            ${result.warnings.map(w => '⚠️  ' + w).join('\\n')}
+                            
+                            PDF Data: ${result.pdf_data ? result.pdf_data.substring(0, 100) + '...' : 'None'}
+                        `;
+                    } else {
+                        resultDiv.innerHTML = `
+                            <span class="error">❌ Compilation Failed!</span>
+                            
+                            Error: ${result.error}
+                            Duration: ${result.duration_ms.toFixed(2)}ms
+                        `;
+                    }
+                    
+                } catch (error) {
+                    console.error('❌ Compilation failed with exception:', error);
+                    document.getElementById('compile-result').innerHTML = `
+                        <span class="error">❌ Compilation Exception!</span>
+                        
+                        ${error.message}
+                    `;
+                }
+            }
+        };
+        
+        // Start initialization
+        initWasm();
+    </script>
+</body>
+</html>

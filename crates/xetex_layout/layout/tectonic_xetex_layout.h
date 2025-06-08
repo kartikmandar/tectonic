@@ -39,7 +39,18 @@ authorization from the copyright holders.
 #include "tectonic_bridge_core.h"
 
 /* harfbuzz: hb_tag_t and hb_font_t used below */
+#ifndef __wasm__
 #include <harfbuzz/hb.h>
+#else
+/* Stub types for WASM compilation */
+typedef uint32_t hb_tag_t;
+typedef struct hb_font_t hb_font_t;
+typedef struct hb_feature_t hb_feature_t;
+/* Forward declaration only if not already defined */
+#ifndef HB_OT_MATH_GLYPH_PART_T_DEFINED
+typedef struct hb_ot_math_glyph_part_t hb_ot_math_glyph_part_t;
+#endif
+#endif
 
 
 /* Set up our types */
@@ -51,8 +62,13 @@ typedef CTFontDescriptorRef PlatformFontRef;
 
 #else /* XETEX_MAC */
 
+#ifndef __wasm__
 #include <fontconfig/fontconfig.h>
 typedef FcPattern* PlatformFontRef;
+#else
+/* Stub types for WASM compilation */
+typedef void* PlatformFontRef;
+#endif
 typedef int32_t Fixed; /* macOS defines Fixed in system headers */
 
 #endif /* XETEX_MAC */

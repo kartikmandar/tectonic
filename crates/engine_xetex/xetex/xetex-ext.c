@@ -41,21 +41,34 @@ authorization from the copyright holders.
 #include "teckit-c-Engine.h"
 #include "xetex-swap.h"
 
+#ifndef __wasm__
 #include <assert.h>
 #include <locale.h>
 #include <math.h> /* for fabs() */
 #include <signal.h>
 #include <time.h>
+#else
+/* WebAssembly compatibility - headers provided by bridge_core */
+#include <locale.h>
+#include <signal.h>
+#endif
 
 #ifndef _MSC_VER
 #include <sys/time.h>
 #endif
 
+#ifndef __wasm__
 #include <unicode/ubidi.h>
 #include <unicode/ubrk.h>
 #include <unicode/ucnv.h>
 
 #include <graphite2/Font.h>
+#else
+/* WebAssembly stubs for Unicode/Graphite2 functionality */
+typedef void* UBreakIterator;
+typedef void* gr_font;
+typedef void* gr_face;
+#endif
 
 #include "xetex-xetexd.h"
 
@@ -65,6 +78,106 @@ authorization from the copyright holders.
 #define kGPOS HB_TAG('G','P','O','S')
 
 
+#ifdef __wasm__
+/* WebAssembly stubs for Unicode functionality */
+#define U_ZERO_ERROR 0
+typedef int UErrorCode;
+typedef int ULineBreak;
+typedef uint16_t UChar;
+#define UBRK_LINE 0
+#define U_SUCCESS(x) ((x) <= 0)
+#define UBIDI_MIXED 2
+#define HB_TAG_NONE 0
+
+static void* brkIter = NULL;
+static int brkLocaleStrNum = 0;
+static void* cnv = NULL;
+
+/* Stub Unicode and HarfBuzz functions for WebAssembly */
+static void* ubrk_open(int type, const char* locale, const uint16_t* text, int32_t textLength, UErrorCode* status) {
+    (void)type; (void)locale; (void)text; (void)textLength; (void)status;
+    return NULL;
+}
+static void ubrk_close(void* bi) { (void)bi; }
+static int32_t ubrk_first(void* bi) { (void)bi; return -1; }
+static int32_t ubrk_next(void* bi) { (void)bi; return -1; }
+static int32_t ubrk_preceding(void* bi, int32_t offset) { (void)bi; (void)offset; return -1; }
+static int32_t ubrk_following(void* bi, int32_t offset) { (void)bi; (void)offset; return -1; }
+
+/* HarfBuzz stub functions */
+static uint32_t hb_tag_from_string(const char* str, int len) { 
+    (void)str; (void)len; return 0; 
+}
+
+/* Graphite2 stub functions */
+static void gr_label_destroy(void* label) { (void)label; }
+
+/* BiDi stub types and functions */
+typedef int UBiDiDirection;
+typedef void UBiDi;
+#define UBIDI_RTL 1
+static void* ubidi_open(void) { return NULL; }
+static void ubidi_close(void* bidi) { (void)bidi; }
+static void ubidi_setPara(void* bidi, const uint16_t* text, int32_t length, int level, void* embeddingLevels, UErrorCode* pErrorCode) {
+    (void)bidi; (void)text; (void)length; (void)level; (void)embeddingLevels; (void)pErrorCode;
+}
+static int ubidi_getDirection(const void* bidi) { (void)bidi; return 0; }
+static int32_t ubidi_getLength(const void* bidi) { (void)bidi; return 0; }
+static int32_t ubidi_countRuns(void* bidi, UErrorCode* pErrorCode) { 
+    (void)bidi; (void)pErrorCode; return 0; 
+}
+static UBiDiDirection ubidi_getVisualRun(void* bidi, int32_t runIndex, int32_t* pLogicalStart, int32_t* pLength) {
+    (void)bidi; (void)runIndex; (void)pLogicalStart; (void)pLength; return 0;
+}
+
+/* Unicode converter stub functions */
+typedef void UConverter;
+static void* ucnv_open(const char* name, UErrorCode* err) {
+    (void)name; (void)err; return NULL;
+}
+static void ucnv_close(void* converter) { (void)converter; }
+
+/* String function stubs for WebAssembly */
+static int strcasecmp(const char* s1, const char* s2) {
+    while (*s1 && *s2) {
+        int c1 = (*s1 >= 'A' && *s1 <= 'Z') ? *s1 + 32 : *s1;
+        int c2 = (*s2 >= 'A' && *s2 <= 'Z') ? *s2 + 32 : *s2;
+        if (c1 != c2) return c1 - c2;
+        s1++; s2++;
+    }
+    return *s1 - *s2;
+}
+static char* strcat(char* dest, const char* src) {
+    char* ret = dest;
+    while (*dest) dest++;
+    while ((*dest++ = *src++));
+    return ret;
+}
+static char* strstr(const char* haystack, const char* needle) {
+    if (!*needle) return (char*)haystack;
+    for (; *haystack; haystack++) {
+        const char* h = haystack;
+        const char* n = needle;
+        while (*h && *n && *h == *n) { h++; n++; }
+        if (!*n) return (char*)haystack;
+    }
+    return NULL;
+}
+static char* strdup(const char* s) {
+    size_t len = strlen(s) + 1;
+    char* result = (char*)malloc(len);
+    if (result) memcpy(result, s, len);
+    return result;
+}
+
+void
+linebreak_start(int f, int32_t localeStrNum, uint16_t* text, int32_t textLength)
+{
+    /* WebAssembly stub - disable line breaking for now */
+    (void)f; (void)localeStrNum; (void)text; (void)textLength;
+}
+
+#else
 static UBreakIterator* brkIter = NULL;
 static int brkLocaleStrNum = 0;
 
@@ -2153,3 +2266,5 @@ int32_t real_get_native_word_cp(void* pNode, int side)
     }
     return get_cp_code(f, actual_glyph, side);
 }
+
+#endif /* __wasm__ */

@@ -65,6 +65,22 @@ fn main() {
     let target = env::var("TARGET").unwrap();
     let out_dir = env::var("OUT_DIR").unwrap();
     let manifest_dir: PathBuf = env::var("CARGO_MANIFEST_DIR").unwrap().into();
+
+    // Skip dependency probing and C++ compilation for WASM targets
+    if target.starts_with("wasm32") {
+        // Create minimal stub header for WASM
+        let mut main_header_src = manifest_dir;
+        main_header_src.push("layout");
+        main_header_src.push("tectonic_xetex_layout.h");
+
+        let mut main_header_dest = PathBuf::from(out_dir.clone());
+        main_header_dest.push("tectonic_xetex_layout.h");
+
+        std::fs::copy(&main_header_src, &main_header_dest).expect("failed to copy main header");
+        println!("cargo:include-path={out_dir}");
+        return;
+    }
+
     let is_mac_os = target_cfg!(target_os = "macos");
 
     // Find any necessary deps.

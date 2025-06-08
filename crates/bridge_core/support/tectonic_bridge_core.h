@@ -21,22 +21,162 @@
 
 /* Universal headers */
 
+#ifndef __wasm__
 #include <assert.h>
+#else
+/* WebAssembly compatibility - provide assert macro */
+#ifdef NDEBUG
+#define assert(condition) ((void)0)
+#else
+#define assert(condition) do { if (!(condition)) __builtin_trap(); } while(0)
+#endif
+#endif
+#ifndef __wasm__
 #include <ctype.h>
+#else
+/* WebAssembly compatibility - provide basic ctype functions */
+static inline int isspace(int c) { return c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\f' || c == '\v'; }
+static inline int isalpha(int c) { return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z'); }
+static inline int isdigit(int c) { return c >= '0' && c <= '9'; }
+static inline int isalnum(int c) { return isalpha(c) || isdigit(c); }
+static inline int tolower(int c) { return (c >= 'A' && c <= 'Z') ? c + 32 : c; }
+static inline int toupper(int c) { return (c >= 'a' && c <= 'z') ? c - 32 : c; }
+#endif
+#ifndef __wasm__
 #include <errno.h>
+#else
+/* WebAssembly compatibility - provide basic errno constants */
+#define ENOTDIR 20
+#define EISDIR 21
+#define EINVAL 22
+#define ENOENT 2
+extern int errno;
+#endif
 #include <float.h>
+#ifndef __wasm__
 #include <inttypes.h>
+#else
+/* WebAssembly compatibility - provide basic inttypes definitions */
+#include <stdint.h>
+#ifndef PRId64
+# define PRId64 "lld"
+#endif
+#ifndef PRIdPTR
+# define PRIdPTR "ld"
+#endif
+#ifndef PRIxPTR
+# define PRIxPTR "lx"
+#endif
+#ifndef PRIuZ
+# define PRIuZ "zu"
+#endif
+#ifndef PRIXZ
+# define PRIXZ "zX"
+#endif
+#ifndef PRIx32
+# define PRIx32 "x"
+#endif
+#endif
 #include <limits.h>
+#ifndef __wasm__
 #include <math.h>
+#else
+/* WebAssembly compatibility - provide basic math functions */
+#define M_PI 3.14159265358979323846
+#include <stdint.h>
+static inline double fabs(double x) { return x < 0 ? -x : x; }
+static inline float fabsf(float x) { return x < 0 ? -x : x; }
+static inline double floor(double x) { return (double)(long long)x - (x < (double)(long long)x ? 1 : 0); }
+static inline double ceil(double x) { return (double)(long long)x + (x > (double)(long long)x ? 1 : 0); }
+static inline double sqrt(double x) { 
+  double result = x;
+  if (x >= 0) {
+    for (int i = 0; i < 10; i++) {
+      result = 0.5 * (result + x / result);
+    }
+  }
+  return result;
+}
+#endif
+#ifndef __wasm__
 #include <setjmp.h> /* for global handling below */
+#else
+/* WebAssembly compatibility - provide basic setjmp definitions */
+typedef struct { int __dummy; } jmp_buf[1];
+typedef jmp_buf sigjmp_buf;
+#define setjmp(env) 0
+#define longjmp(env, val) ((void)0)
+#define sigsetjmp(env, savemask) 0
+#define siglongjmp(env, val) ((void)0)
+#endif
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#ifndef __wasm__
 #include <stdlib.h>
+#else
+/* WebAssembly compatibility - provide basic stdlib functions */
+#include <stddef.h>
+static inline void* malloc(size_t size) { (void)size; return (void*)0; }  // Stub for WASM
+static inline void free(void* ptr) { (void)ptr; }  // Stub for WASM
+static inline void* calloc(size_t num, size_t size) { (void)num; (void)size; return (void*)0; }  // Stub for WASM
+static inline void* realloc(void* ptr, size_t size) { (void)ptr; (void)size; return (void*)0; }  // Stub for WASM
+static inline void abort(void) { __builtin_trap(); }
+static inline void exit(int status) { (void)status; __builtin_trap(); }
+static inline int abs(int x) { return x < 0 ? -x : x; }
+#define EXIT_SUCCESS 0
+#define EXIT_FAILURE 1
+#define NULL ((void*)0)
+#endif
+#ifndef __wasm__
 #include <string.h>
-#include <sys/types.h>
-#include <time.h> /* time_t */
+#else
+/* WebAssembly compatibility - provide basic string functions */
+static inline size_t strlen(const char* s) { 
+  size_t len = 0; 
+  while (s[len]) len++; 
+  return len; 
+}
+static inline char* strcpy(char* dest, const char* src) {
+  size_t i = 0;
+  while ((dest[i] = src[i]) != '\0') i++;
+  return dest;
+}
+static inline int strcmp(const char* s1, const char* s2) {
+  while (*s1 && (*s1 == *s2)) { s1++; s2++; }
+  return *(unsigned char*)s1 - *(unsigned char*)s2;
+}
+static inline int strncmp(const char* s1, const char* s2, size_t n) {
+  while (n-- && *s1 && (*s1 == *s2)) { s1++; s2++; }
+  if (n == (size_t)-1) return 0;
+  return *(unsigned char*)s1 - *(unsigned char*)s2;
+}
+static inline char* strncpy(char* dest, const char* src, size_t n) {
+  size_t i = 0;
+  while (i < n && src[i]) { dest[i] = src[i]; i++; }
+  while (i < n) dest[i++] = '\0';
+  return dest;
+}
+static inline void* memset(void* s, int c, size_t n) {
+  unsigned char* p = (unsigned char*)s;
+  while (n--) *p++ = (unsigned char)c;
+  return s;
+}
+static inline void* memcpy(void* dest, const void* src, size_t n) {
+  unsigned char* d = (unsigned char*)dest;
+  const unsigned char* s = (const unsigned char*)src;
+  while (n--) *d++ = *s++;
+  return dest;
+}
+static inline char* strerror(int errnum) {
+  (void)errnum; 
+  static char error_msg[] = "Error";
+  return error_msg;
+}
+#endif
+#include <sys/types.h> /* Let system provide these types for both native and WASM */
+#include <time.h> /* time_t - let system provide it for both native and WASM */
 
 /* Convenience for C++: this way Emacs doesn't try to indent the prototypes,
  * which I find annoying. */
@@ -89,10 +229,17 @@
  * On Unix, sys/types.h gives ssize_t. On MSVC we need to do the following:
  */
 
-#if defined(_MSC_VER)
+#if defined(_MSC_VER) && !defined(__wasm__)
 #include <BaseTsd.h>
 typedef SSIZE_T ssize_t;
 #endif
+
+/* WebAssembly ssize_t definition - let Emscripten provide it 
+#if defined(__wasm__) && !defined(_SSIZE_T)
+typedef int32_t ssize_t;
+#define _SSIZE_T
+#endif
+*/
 
 /* Portability: M_PI
  *
@@ -163,7 +310,7 @@ static inline void *mfree(void *ptr) {
 
 /* Generic string utilities used widely in the original code. */
 
-#ifndef isblank
+#if !defined(__wasm__) && !defined(isblank)
 #define isblank(c) ((c) == ' ' || (c) == '\t')
 #endif
 #define ISBLANK(c) (isascii(c) && isblank((unsigned char)c))

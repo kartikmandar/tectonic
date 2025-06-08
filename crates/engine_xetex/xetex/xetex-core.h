@@ -9,17 +9,24 @@
 #include "tectonic_bridge_core.h"
 
 /* ICU */
+#ifndef __wasm__
 #include <unicode/utypes.h>
 #include <unicode/platform.h> // defines U_IS_BIG_ENDIAN for us
+#else
+/* Define ICU macros for WASM */
+#define U_IS_BIG_ENDIAN 0  /* WASM is little endian */
+#endif
 
 /* fontconfig */
-#ifndef XETEX_MAC
+#if !defined(XETEX_MAC) && !defined(__wasm__)
 #include <fontconfig/fontconfig.h>
 #endif
 
 /* harfbuzz */
+#ifndef __wasm__
 #include <harfbuzz/hb.h>
 #include <harfbuzz/hb-ot.h>
+#endif
 
 /* Endianness foo */
 

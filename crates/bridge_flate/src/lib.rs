@@ -15,6 +15,12 @@ use std::{
     slice,
 };
 
+// Conditional C type imports for WebAssembly compatibility
+#[cfg(target_arch = "wasm32")]
+use std::ffi::{c_int, c_void};
+#[cfg(not(target_arch = "wasm32"))]
+use libc::{c_int, c_void};
+
 /// Re-export of the flate2 crate linked by this crate.
 pub use flate2;
 
@@ -152,7 +158,7 @@ impl Decompressor<'_> {
 pub unsafe extern "C" fn tectonic_flate_new_decompressor(
     input_ptr: *const u8,
     input_len: u64,
-) -> *mut libc::c_void {
+) -> *mut c_void {
     let input = slice::from_raw_parts(input_ptr, input_len as usize);
 
     let dc = Decompressor {
@@ -182,7 +188,7 @@ pub unsafe extern "C" fn tectonic_flate_decompress_chunk(
     handle: *mut libc::c_void,
     output_ptr: *mut u8,
     output_len: *mut u64,
-) -> libc::c_int {
+) -> c_int {
     let mut dc = Box::from_raw(handle as *mut Decompressor);
     let output = slice::from_raw_parts_mut(output_ptr, *output_len as usize);
 

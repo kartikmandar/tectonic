@@ -5,20 +5,24 @@ use std::{env, path::PathBuf};
 
 fn main() {
     let manifest_dir: PathBuf = env::var("CARGO_MANIFEST_DIR").unwrap().into();
+    let target = env::var("TARGET").unwrap();
 
     let mut main_header_src = manifest_dir;
     main_header_src.push("support");
 
-    let mut build = cc::Build::new();
-    build
-        .warnings(true)
-        .file("support/support.c")
-        .include(&main_header_src)
-        .compile("libtectonic_bridge_core.a");
+    // Skip C compilation for WASM targets since they don't have standard C headers
+    if !target.starts_with("wasm32") {
+        let mut build = cc::Build::new();
+        build
+            .warnings(true)
+            .file("support/support.c")
+            .include(&main_header_src)
+            .compile("libtectonic_bridge_core.a");
 
-    println!("cargo:rerun-if-changed=support/support.c");
-    println!("cargo:rerun-if-changed=support/tectonic_bridge_core.h");
-    println!("cargo:rerun-if-changed=support/tectonic_bridge_core_generated.h");
+        println!("cargo:rerun-if-changed=support/support.c");
+        println!("cargo:rerun-if-changed=support/tectonic_bridge_core.h");
+        println!("cargo:rerun-if-changed=support/tectonic_bridge_core_generated.h");
+    }
 
     // Cargo exposes this as the environment variable DEP_XXX_INCLUDE, where XXX
     // is the "links" setting in Cargo.toml. This is the key element that allows

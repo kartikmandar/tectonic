@@ -1,0 +1,68 @@
+# Copyright 2024 the Tectonic Project
+# Licensed under the MIT License.
+
+[package]
+name = "tectonic_wasm"
+version = "0.0.0-dev.0"
+authors = ["FormatFree Project Contributors"]
+description = """
+Minimal WebAssembly interface for the Tectonic TeX engine.
+Focused on WYSIWYG LaTeX editing with incremental compilation.
+"""
+homepage = "https://github.com/kartikmandar/tectonic"
+repository = "https://github.com/kartikmandar/tectonic"
+license = "MIT"
+edition = "2018"
+
+[lib]
+name = "tectonic_wasm"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+# Core functionality (pure Rust, WASM-compatible)
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# WASM-specific dependencies (optional)
+wasm-bindgen = { version = "0.2", optional = true }
+web-sys = { version = "0.3", features = [
+    "console", 
+    "Window", 
+    "Performance",
+    "Document",
+    "Element"
+], optional = true }
+serde-wasm-bindgen = { version = "0.6", optional = true }
+js-sys = { version = "0.3", optional = true }
+console_error_panic_hook = { version = "0.1", optional = true }
+base64 = { version = "0.22", optional = true }
+
+# Essential Tectonic components (minimal set)
+# Use local path references to Tectonic crates that are WASM-compatible
+tectonic_errors = { path = "../errors", version = "0.0.0-dev.0" }
+tectonic_status_base = { path = "../status_base", version = "0.0.0-dev.0" }
+
+# Only include core engine if we can make it compile
+# tectonic_engine_xetex = { path = "../engine_xetex", version = "0.0.0-dev.0", optional = true }
+
+[features]
+default = []
+
+# WASM feature enables all WASM-specific functionality
+wasm = [
+    "wasm-bindgen",
+    "web-sys", 
+    "serde-wasm-bindgen",
+    "js-sys",
+    "console_error_panic_hook",
+    "base64"
+]
+
+# SIMD support for WebAssembly
+simd = []
+
+# Engine feature - only enable when we can compile the engine
+# engine = ["tectonic_engine_xetex"]
+
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = ["-Oz", "--enable-simd"]

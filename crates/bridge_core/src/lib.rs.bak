@@ -970,7 +970,7 @@ pub extern "C" fn ttbc_output_putc(
     es: &mut CoreBridgeState,
     handle: *mut OutputHandle,
     c: c_int,
-) -> c_int {
+) -> libc::c_int {
     let rc = c as u8;
 
     if es.output_write(handle, &[rc]) {
@@ -1011,8 +1011,8 @@ pub unsafe extern "C" fn ttbc_output_write(
 pub extern "C" fn ttbc_output_flush(
     es: &mut CoreBridgeState,
     handle: *mut OutputHandle,
-) -> c_int {
-    c_int::from(es.output_flush(handle))
+) -> libc::c_int {
+    libc::c_int::from(es.output_flush(handle))
 }
 
 /// Close a Tectonic output file.
@@ -1020,12 +1020,12 @@ pub extern "C" fn ttbc_output_flush(
 pub extern "C" fn ttbc_output_close(
     es: &mut CoreBridgeState,
     handle: *mut OutputHandle,
-) -> c_int {
+) -> libc::c_int {
     if handle.is_null() {
         return 0; // This is/was the behavior of close_file() in C.
     }
 
-    c_int::from(es.output_close(es.output_to_id(handle)))
+    libc::c_int::from(es.output_close(es.output_to_id(handle)))
 }
 
 /// Open a Tectonic file for input.
@@ -1036,9 +1036,9 @@ pub extern "C" fn ttbc_output_close(
 #[no_mangle]
 pub unsafe extern "C" fn ttbc_input_open(
     es: &mut CoreBridgeState,
-    name: *const c_char,
+    name: *const libc::c_char,
     format: FileFormat,
-    is_gz: c_int,
+    is_gz: libc::c_int,
 ) -> *mut InputHandle {
     let rname = CStr::from_ptr(name).to_string_lossy();
     let ris_gz = is_gz != 0;
@@ -1130,8 +1130,8 @@ pub unsafe extern "C" fn ttbc_input_seek(
     es: &mut CoreBridgeState,
     handle: *mut InputHandle,
     offset: ssize_t,
-    whence: c_int,
-    internal_error: *mut c_int,
+    whence: libc::c_int,
+    internal_error: *mut libc::c_int,
 ) -> size_t {
     let rwhence = match whence {
         0 => SeekFrom::Start(offset as u64),
@@ -1149,7 +1149,7 @@ pub unsafe extern "C" fn ttbc_input_seek(
     };
 
     match es.input_seek(handle, rwhence) {
-        Ok(pos) => pos as size_t,
+        Ok(pos) => pos as libc::size_t,
         Err(e) => {
             // TODO: Handle the error better. Report the error properly to the caller?
             tt_error!(es.status, "input seek failed"; e);
@@ -1163,19 +1163,19 @@ pub unsafe extern "C" fn ttbc_input_seek(
 pub extern "C" fn ttbc_input_getc(
     es: &mut CoreBridgeState,
     handle: *mut InputHandle,
-) -> c_int {
+) -> libc::c_int {
     // If we couldn't fill the whole (1-byte) buffer, that's boring old EOF.
     // No need to complain. Fun match statement here.
 
     match es.input_getc(handle) {
-        Ok(b) => c_int::from(b),
+        Ok(b) => libc::c_int::from(b),
         Err(e) => {
             if let Some(ioe) = e.downcast_ref::<io::Error>() {
                 if ioe.kind() == io::ErrorKind::UnexpectedEof {
                     #[cfg(target_family = "wasm")]
                     return -1i32; // WASI doesn't define EOF, use standard -1
                     #[cfg(not(target_family = "wasm"))]
-                    return -1;
+                    return libc::EOF;
                 }
             }
 
@@ -1190,8 +1190,8 @@ pub extern "C" fn ttbc_input_getc(
 pub extern "C" fn ttbc_input_ungetc(
     es: &mut CoreBridgeState,
     handle: *mut InputHandle,
-    ch: c_int,
-) -> c_int {
+    ch: libc::c_int,
+) -> libc::c_int {
     match es.input_ungetc(handle, ch as u8) {
         Ok(_) => 0,
         Err(e) => {
@@ -1211,7 +1211,7 @@ pub unsafe extern "C" fn ttbc_input_read(
     es: &mut CoreBridgeState,
     handle: *mut InputHandle,
     data: *mut u8,
-    len: size_t,
+    len: libc::size_t,
 ) -> ssize_t {
     let rdata = slice::from_raw_parts_mut(data, len);
 
@@ -1229,12 +1229,12 @@ pub unsafe extern "C" fn ttbc_input_read(
 pub extern "C" fn ttbc_input_close(
     es: &mut CoreBridgeState,
     handle: *mut InputHandle,
-) -> c_int {
+) -> libc::c_int {
     if handle.is_null() {
         return 0; // This is/was the behavior of close_file() in C.
     }
 
-    c_int::from(es.input_close(es.input_to_id(handle)))
+    libc::c_int::from(es.input_close(es.input_to_id(handle)))
 }
 
 /// A buffer for diagnostic messages. Rust code does not need to use this type.
@@ -1273,7 +1273,7 @@ pub extern "C" fn ttbc_diag_begin_error() -> *mut Diagnostic {
 ///
 /// This function is unsafe because it accepts a raw C string.
 #[no_mangle]
-pub unsafe extern "C" fn ttbc_diag_append(diag: &mut Diagnostic, text: *const c_char) {
+pub unsafe extern "C" fn ttbc_diag_append(diag: &mut Diagnostic, text: *const libc::c_char) {
     let rtext = CStr::from_ptr(text);
     diag.message.push_str(&rtext.to_string_lossy());
 }
@@ -1300,8 +1300,8 @@ pub unsafe extern "C" fn ttbc_diag_finish(es: &mut CoreBridgeState, diag: *mut D
 pub unsafe extern "C" fn ttbc_shell_escape(
     es: &mut CoreBridgeState,
     cmd: *const u16,
-    len: size_t,
-) -> c_int {
+    len: libc::size_t,
+) -> libc::c_int {
     let rcmd = slice::from_raw_parts(cmd, len);
     let rcmd = match String::from_utf16(rcmd) {
         Ok(cmd) => cmd,
@@ -1311,7 +1311,7 @@ pub unsafe extern "C" fn ttbc_shell_escape(
         }
     };
 
-    c_int::from(es.shell_escape(&rcmd))
+    libc::c_int::from(es.shell_escape(&rcmd))
 }
 
 /// Different types of files that can be opened by TeX engines

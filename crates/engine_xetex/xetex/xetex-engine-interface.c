@@ -7,7 +7,9 @@
 #include "xetex-xetexd.h"
 #include "xetex-ext.h"
 
+#ifndef __wasm__
 #include <string.h>
+#endif
 
 int tt_xetex_set_int_variable (const char *var_name, int value);
 int tt_xetex_set_string_variable (const char *var_name, const char *value);

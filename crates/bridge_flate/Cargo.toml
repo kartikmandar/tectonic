@@ -19,6 +19,6 @@ edition = "2018"
 links = "tectonic_bridge_flate"
 
 [dependencies]
-flate2 = { version = "^1.0", default-features = false, features = ["zlib"] }
+flate2 = { version = "^1.0", default-features = false, features = ["zlib-rs"] }
 libc = "^0.2"
 

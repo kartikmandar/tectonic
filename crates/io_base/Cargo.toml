@@ -17,7 +17,7 @@ edition = "2018"
 
 [dependencies]
 app_dirs2 = "^2.3"
-flate2 = { version = "^1.0.19", default-features = false, features = ["zlib"] }
+flate2 = { version = "^1.0.19", default-features = false, features = ["zlib-rs"] }
 libc = "^0.2" # for EISDIR :-(
 sha2 = "^0.10" # for digest computations
 thiserror = "2.0"

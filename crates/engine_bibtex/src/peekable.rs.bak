@@ -53,7 +53,7 @@ impl PeekableInput {
         }
     }
 
-    fn getc(&mut self, engine: &mut CoreBridgeState<'_>) -> c_int {
+    fn getc(&mut self, engine: &mut CoreBridgeState<'_>) -> libc::c_int {
         if self.peek_char != EOF {
             let rv = self.peek_char;
             self.peek_char = EOF;
@@ -64,7 +64,7 @@ impl PeekableInput {
         //         to the handle
         let handle = engine.get_input(self.id);
         let rv = match handle.getc() {
-            Ok(c) => c_int::from(c),
+            Ok(c) => libc::c_int::from(c),
             Err(e) => {
                 if let Some(e) = e.downcast_ref::<io::Error>() {
                     if e.kind() == io::ErrorKind::UnexpectedEof {
@@ -80,7 +80,7 @@ impl PeekableInput {
         rv
     }
 
-    fn ungetc(&mut self, c: c_int) {
+    fn ungetc(&mut self, c: libc::c_int) {
         assert_ne!(c, EOF);
         self.peek_char = c;
     }
@@ -105,7 +105,7 @@ impl PeekableInput {
         if c != EOF {
             self.ungetc(c);
         }
-        c == b'\n' as c_int || c == '\r' as c_int || c == EOF
+        c == b'\n' as libc::c_int || c == '\r' as libc::c_int || c == EOF
     }
 }
 
@@ -132,9 +132,9 @@ pub(crate) fn input_ln(
 
     // For side effects - consume the eoln we saw
     let eoln = peekable.getc(engine);
-    if eoln == '\r' as c_int {
+    if eoln == '\r' as libc::c_int {
         let next = peekable.getc(engine);
-        if next != '\n' as c_int {
+        if next != '\n' as libc::c_int {
             peekable.ungetc(next);
         }
     }

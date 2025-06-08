@@ -1,0 +1,21 @@
+[target.wasm32-unknown-emscripten]
+# Use Emscripten compilers for WebAssembly compilation
+linker = "emcc"
+rustflags = [
+    "-C", "link-arg=-s WASM=1", 
+    "-C", "link-arg=-s SIDE_MODULE=0",
+    "-C", "link-arg=--no-entry"
+]
+
+[target.wasm32-unknown-emscripten.env]
+# Set Emscripten environment variables for C/C++ compilation
+CC = "emcc"
+CXX = "em++"
+AR = "emar"
+# Minimal flags to avoid clang crash
+CFLAGS = "-O0 -fPIC"
+CXXFLAGS = "-O0 -fPIC"
+
+[build]
+# Default to wasm32-unknown-emscripten for this project
+target = "wasm32-unknown-emscripten"

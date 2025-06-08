@@ -220,12 +220,19 @@ pub fn detect_bundle(
                 return Ok(Some(Box::new(bundle)));
             }
         } else if url.scheme() == "file" {
+            #[cfg(not(target_arch = "wasm32"))]
             let file_path = url.to_file_path().map_err(|_| {
                 std::io::Error::new(
                     std::io::ErrorKind::InvalidInput,
                     "failed to parse local path",
                 )
             })?;
+            
+            #[cfg(target_arch = "wasm32")]
+            let file_path = {
+                use std::path::PathBuf;
+                PathBuf::from(url.path())
+            };
             return bundle_from_path(file_path);
         } else {
             return Ok(None);

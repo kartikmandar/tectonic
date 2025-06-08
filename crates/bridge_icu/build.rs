@@ -23,31 +23,38 @@ impl Spec for IcuSpec {
 
 fn main() {
     let target = std::env::var("TARGET").unwrap();
-    let cfg = Configuration::default();
-    let dep = Dependency::probe(IcuSpec, &cfg);
 
-    // This is the key. What we print here will be propagated into depending
-    // crates' build scripts as the environment variable DEP_ICUUC_INCLUDE_PATH,
-    // allowing them to find the headers internally.
+    // Skip system dependency probing for WASM targets
+    if !target.starts_with("wasm32") {
+        let cfg = Configuration::default();
+        let dep = Dependency::probe(IcuSpec, &cfg);
 
-    let mut sep = "cargo:include-path=";
+        // This is the key. What we print here will be propagated into depending
+        // crates' build scripts as the environment variable DEP_ICUUC_INCLUDE_PATH,
+        // allowing them to find the headers internally.
 
-    dep.foreach_include_path(|p| {
-        print!("{}{}", sep, p.to_str().unwrap());
-        sep = ";";
-    });
+        let mut sep = "cargo:include-path=";
 
-    println!();
+        dep.foreach_include_path(|p| {
+            print!("{}{}", sep, p.to_str().unwrap());
+            sep = ";";
+        });
 
-    dep.emit();
+        println!();
 
-    // vcpkg-rs is not guaranteed to emit libraries in the order required by a
-    // single-pass linker, so we might need to make sure that's done right.
+        dep.emit();
 
-    if cfg.backend == Backend::Vcpkg && target.contains("-linux-") {
-        // add icudata to the end of the list of libs as vcpkg-rs
-        // does not order individual libraries as a single pass
-        // linker requires.
-        println!("cargo:rustc-link-lib=icudata");
+        // vcpkg-rs is not guaranteed to emit libraries in the order required by a
+        // single-pass linker, so we might need to make sure that's done right.
+
+        if cfg.backend == Backend::Vcpkg && target.contains("-linux-") {
+            // add icudata to the end of the list of libs as vcpkg-rs
+            // does not order individual libraries as a single pass
+            // linker requires.
+            println!("cargo:rustc-link-lib=icudata");
+        }
+    } else {
+        // For WASM targets, provide minimal stubs
+        println!("cargo:include-path=");
     }
 }

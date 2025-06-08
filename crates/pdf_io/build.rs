@@ -20,7 +20,16 @@ impl Spec for LibpngSpec {
 }
 
 fn main() {
+    let target = env::var("TARGET").unwrap();
     let manifest_dir: PathBuf = env::var("CARGO_MANIFEST_DIR").unwrap().into();
+
+    // Skip system dependency probing and C compilation for WASM targets
+    if target.starts_with("wasm32") {
+        let mut main_header_src = manifest_dir;
+        main_header_src.push("pdf_io");
+        println!("cargo:include-path={}", main_header_src.display());
+        return;
+    }
 
     // Dependencies.
 

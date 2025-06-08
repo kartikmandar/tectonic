@@ -5,6 +5,7 @@
 
 #[cfg(feature = "external-harfbuzz")]
 mod inner {
+    use std::env;
     use tectonic_dep_support::{Configuration, Dependency, Spec};
 
     struct HarfbuzzSpec;
@@ -30,23 +31,31 @@ mod inner {
     }
 
     pub fn build_harfbuzz() {
-        let cfg = Configuration::default();
-        let dep = Dependency::probe(HarfbuzzSpec, &cfg);
+        let target = env::var("TARGET").unwrap();
 
-        // This is the key. What we print here will be propagated into depending
-        // crates' build scripts as the envirnoment variable DEP_HARFBUZZ_INCLUDE_PATH,
-        // allowing them to find the headers internally.
+        // Skip system dependency probing for WASM targets
+        if !target.starts_with("wasm32") {
+            let cfg = Configuration::default();
+            let dep = Dependency::probe(HarfbuzzSpec, &cfg);
 
-        let mut sep = "cargo:include-path=";
+            // This is the key. What we print here will be propagated into depending
+            // crates' build scripts as the envirnoment variable DEP_HARFBUZZ_INCLUDE_PATH,
+            // allowing them to find the headers internally.
 
-        dep.foreach_include_path(|p| {
-            print!("{}{}", sep, p.to_str().unwrap());
-            sep = ";";
-        });
+            let mut sep = "cargo:include-path=";
 
-        println!();
+            dep.foreach_include_path(|p| {
+                print!("{}{}", sep, p.to_str().unwrap());
+                sep = ";";
+            });
 
-        dep.emit();
+            println!();
+
+            dep.emit();
+        } else {
+            // For WASM targets, provide minimal stubs
+            println!("cargo:include-path=");
+        }
     }
 }
 
@@ -56,6 +65,12 @@ mod inner {
 
     pub fn build_harfbuzz() {
         let target = env::var("TARGET").unwrap();
+
+        // Skip C++ compilation for WASM targets
+        if target.starts_with("wasm32") {
+            println!("cargo:include-path=");
+            return;
+        }
 
         // Check that the submodule has been checked out.
 

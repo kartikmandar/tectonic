@@ -8,6 +8,12 @@
 #include "xetex-synctex.h"
 
 #include <stdio.h> /* for EOF */
+#ifndef __wasm__
+#include <string.h>
+#else
+/* WebAssembly stub for strcat */
+char* strcat(char* dest, const char* src);
+#endif
 
 #define IS_LC_HEX(c) (((c) >= '0' && (c) <= '9' ) || ((c) >= 'a' && (c) <= 'f' ))
 

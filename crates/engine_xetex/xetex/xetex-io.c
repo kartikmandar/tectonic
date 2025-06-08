@@ -9,7 +9,21 @@
 #include "xetex-xetexd.h"
 
 #include <stdio.h>
+#ifndef __wasm__
 #include <unicode/ucnv.h>
+#else
+/* WebAssembly Unicode stubs */
+#define U_ZERO_ERROR 0
+#define UCNV_UTF32_NativeEndian 0
+#define EINTR 4
+typedef int UErrorCode;
+typedef void UConverter;
+static void* ucnv_open(const char* name, UErrorCode* err) { (void)name; (void)err; return NULL; }
+static void ucnv_close(void* cnv) { (void)cnv; }
+static int ucnv_toAlgorithmic(int target, void* cnv, char* target_buf, int target_len, const char* source_buf, int source_len, UErrorCode* err) {
+    (void)target; (void)cnv; (void)target_buf; (void)target_len; (void)source_buf; (void)source_len; (void)err; return 0;
+}
+#endif
 
 char *name_of_input_file = NULL;
 

@@ -36,6 +36,104 @@ authorization from the copyright holders.
 
 #include <algorithm>
 
+#ifdef __wasm__
+/* WebAssembly HarfBuzz math stubs */
+typedef int32_t hb_position_t;
+typedef int hb_ot_math_constant_t;
+typedef int hb_ot_math_kern_t;
+typedef uint32_t hb_codepoint_t;
+
+/* Define guard to prevent forward declaration conflict */
+#define HB_OT_MATH_GLYPH_PART_T_DEFINED
+
+/* HarfBuzz glyph variant structure */
+typedef struct {
+    hb_codepoint_t glyph;
+    hb_position_t advance;
+} hb_ot_math_glyph_variant_t;
+
+/* HarfBuzz glyph part structure - avoid redefinition conflict */
+typedef struct hb_ot_math_glyph_part_t {
+    hb_codepoint_t glyph;
+    hb_position_t start_connector_length;
+    hb_position_t end_connector_length;
+    hb_position_t full_advance;
+    uint32_t flags;
+} hb_ot_math_glyph_part_t;
+
+/* HarfBuzz math glyph part flags */
+#define HB_MATH_GLYPH_PART_FLAG_EXTENDER 0x00000001
+
+/* HarfBuzz math constants for WASM */
+#define HB_OT_MATH_CONSTANT_SCRIPT_PERCENT_SCALE_DOWN 0
+#define HB_OT_MATH_CONSTANT_SCRIPT_SCRIPT_PERCENT_SCALE_DOWN 1
+#define HB_OT_MATH_CONSTANT_RADICAL_DEGREE_BOTTOM_RAISE_PERCENT 2
+#define HB_OT_MATH_CONSTANT_ACCENT_BASE_HEIGHT 3
+#define HB_OT_MATH_CONSTANT_FRACTION_RULE_THICKNESS 4
+#define HB_OT_MATH_CONSTANT_UPPER_LIMIT_GAP_MIN 5
+#define HB_OT_MATH_CONSTANT_LOWER_LIMIT_GAP_MIN 6
+#define HB_OT_MATH_CONSTANT_BIG_OP_SPACING1 7
+#define HB_OT_MATH_CONSTANT_BIG_OP_SPACING2 8
+#define HB_OT_MATH_CONSTANT_BIG_OP_SPACING3 9
+#define HB_OT_MATH_CONSTANT_BIG_OP_SPACING4 10
+#define HB_OT_MATH_CONSTANT_BIG_OP_SPACING5 11
+#define HB_OT_MATH_CONSTANT_FRACTION_NUMERATOR_DISPLAY_STYLE_SHIFT_UP 12
+#define HB_OT_MATH_CONSTANT_FRACTION_NUMERATOR_SHIFT_UP 13
+#define HB_OT_MATH_CONSTANT_STACK_TOP_SHIFT_UP 14
+#define HB_OT_MATH_CONSTANT_FRACTION_DENOMINATOR_DISPLAY_STYLE_SHIFT_DOWN 15
+#define HB_OT_MATH_CONSTANT_FRACTION_DENOMINATOR_SHIFT_DOWN 16
+#define HB_OT_MATH_CONSTANT_SUPERSCRIPT_SHIFT_UP 17
+#define HB_OT_MATH_CONSTANT_SUPERSCRIPT_SHIFT_UP_CRAMPED 18
+#define HB_OT_MATH_CONSTANT_SUBSCRIPT_SHIFT_DOWN 19
+#define HB_OT_MATH_CONSTANT_SUPERSCRIPT_BASELINE_DROP_MAX 20
+#define HB_OT_MATH_CONSTANT_SUBSCRIPT_BASELINE_DROP_MIN 21
+#define HB_OT_MATH_CONSTANT_DELIMITED_SUB_FORMULA_MIN_HEIGHT 22
+#define HB_OT_MATH_CONSTANT_AXIS_HEIGHT 23
+#define HB_OT_MATH_CONSTANT_UPPER_LIMIT_BASELINE_RISE_MIN 24
+#define HB_OT_MATH_CONSTANT_LOWER_LIMIT_BASELINE_DROP_MIN 25
+#define HB_OT_MATH_CONSTANT_STACK_GAP_MIN 26
+
+/* HarfBuzz direction constants */
+#define HB_DIRECTION_RTL 1
+#define HB_DIRECTION_TTB 2
+
+/* HarfBuzz math kern constants */
+#define HB_OT_MATH_KERN_TOP_RIGHT 0
+#define HB_OT_MATH_KERN_TOP_LEFT 1
+#define HB_OT_MATH_KERN_BOTTOM_RIGHT 2
+#define HB_OT_MATH_KERN_BOTTOM_LEFT 3
+
+/* Stub functions */
+static hb_position_t hb_ot_math_get_constant(void* font, hb_ot_math_constant_t constant) {
+    (void)font; (void)constant; return 0;
+}
+static hb_position_t hb_ot_math_get_glyph_italics_correction(void* font, uint32_t glyph) {
+    (void)font; (void)glyph; return 0;
+}
+static hb_position_t hb_ot_math_get_glyph_top_accent_attachment(void* font, uint32_t glyph) {
+    (void)font; (void)glyph; return 0;
+}
+static void hb_ot_math_get_glyph_variants(void* font, hb_codepoint_t glyph, int direction, 
+                                         unsigned int start_offset, unsigned int *variants_count, 
+                                         hb_ot_math_glyph_variant_t *variants) {
+    (void)font; (void)glyph; (void)direction; (void)start_offset; (void)variants;
+    if (variants_count) *variants_count = 0;
+}
+static unsigned int hb_ot_math_get_glyph_assembly(void* font, hb_codepoint_t glyph, int direction,
+                                                 unsigned int start_offset, unsigned int *parts_count,
+                                                 hb_ot_math_glyph_part_t *parts, hb_position_t *italics_correction) {
+    (void)font; (void)glyph; (void)direction; (void)start_offset; (void)parts; (void)italics_correction;
+    if (parts_count) *parts_count = 0;
+    return 0;
+}
+static hb_position_t hb_ot_math_get_min_connector_overlap(void* font, int direction) {
+    (void)font; (void)direction; return 0;
+}
+static hb_position_t hb_ot_math_get_glyph_kerning(void* font, hb_codepoint_t glyph, hb_ot_math_kern_t kern, hb_position_t correction_height) {
+    (void)font; (void)glyph; (void)kern; (void)correction_height; return 0;
+}
+#endif
+
 #include "tectonic_xetex_layout.h"
 #include "xetex-XeTeXOTMath.h"
 
@@ -206,6 +304,9 @@ get_ot_math_variant(int f, int g, int v, int32_t* adv, int horiz)
 void *
 get_ot_assembly_ptr(int f, int g, int horiz)
 {
+#ifdef __wasm__
+    (void)f; (void)g; (void)horiz; return NULL; /* WebAssembly stub */
+#else
     void *rval = NULL;
 
     if (font_area[f] == OTGR_FONT_FLAG) {
@@ -227,6 +328,7 @@ get_ot_assembly_ptr(int f, int g, int horiz)
     }
 
     return rval;
+#endif
 }
 
 
@@ -472,18 +574,29 @@ ot_part_count(const GlyphAssembly* a)
 int
 ot_part_glyph(const GlyphAssembly* a, int i)
 {
+#ifdef __wasm__
+    (void)a; (void)i; return 0; /* WebAssembly stub */
+#else
     return a->parts[i].glyph;
+#endif
 }
 
 bool
 ot_part_is_extender(const GlyphAssembly* a, int i)
 {
+#ifdef __wasm__
+    (void)a; (void)i; return false; /* WebAssembly stub */
+#else
     return (a->parts[i].flags & HB_MATH_GLYPH_PART_FLAG_EXTENDER) != 0;
+#endif
 }
 
 int
 ot_part_start_connector(int f, const GlyphAssembly* a, int i)
 {
+#ifdef __wasm__
+    (void)f; (void)a; (void)i; return 0; /* WebAssembly stub */
+#else
     int rval = 0;
 
     if (font_area[f] == OTGR_FONT_FLAG) {
@@ -492,11 +605,15 @@ ot_part_start_connector(int f, const GlyphAssembly* a, int i)
     }
 
     return rval;
+#endif
 }
 
 int
 ot_part_end_connector(int f, const GlyphAssembly* a, int i)
 {
+#ifdef __wasm__
+    (void)f; (void)a; (void)i; return 0; /* WebAssembly stub */
+#else
     int rval = 0;
 
     if (font_area[f] == OTGR_FONT_FLAG) {
@@ -505,11 +622,15 @@ ot_part_end_connector(int f, const GlyphAssembly* a, int i)
     }
 
     return rval;
+#endif
 }
 
 int
 ot_part_full_advance(int f, const GlyphAssembly* a, int i)
 {
+#ifdef __wasm__
+    (void)f; (void)a; (void)i; return 0; /* WebAssembly stub */
+#else
     int rval = 0;
 
     if (font_area[f] == OTGR_FONT_FLAG) {
@@ -518,4 +639,5 @@ ot_part_full_advance(int f, const GlyphAssembly* a, int i)
     }
 
     return rval;
+#endif
 }

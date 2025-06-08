@@ -686,7 +686,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c936bfdafb507ebbf50b8074c54fa31c5be9a1e7e5f467dd659697041407d07c"
 dependencies = [
  "crc32fast",
- "libz-sys",
+ "libz-rs-sys",
  "miniz_oxide",
 ]
 
@@ -841,8 +841,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c4567c8db10ae91089c99af84c68c38da3ec2f087c3f82960bcdbf3656b6f4d7"
 dependencies = [
  "cfg-if",
+ "js-sys",
  "libc",
  "wasi 0.11.0+wasi-snapshot-preview1",
+ "wasm-bindgen",
 ]
 
 [[package]]
@@ -1680,6 +1682,15 @@ dependencies = [
  "bitflags 2.8.0",
  "libc",
  "redox_syscall",
+]
+
+[[package]]
+name = "libz-rs-sys"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "902bc563b5d65ad9bba616b490842ef0651066a1a1dc3ce1087113ffcb873c8d"
+dependencies = [
+ "zlib-rs",
 ]
 
 [[package]]
@@ -2878,6 +2889,7 @@ dependencies = [
  "error-chain",
  "filetime",
  "flate2",
+ "getrandom 0.2.15",
  "js-sys",
  "lazy_static",
  "open",
@@ -3109,6 +3121,22 @@ name = "tectonic_status_base"
 version = "0.0.0-dev.0"
 dependencies = [
  "tectonic_errors",
+]
+
+[[package]]
+name = "tectonic_wasm"
+version = "0.0.0-dev.0"
+dependencies = [
+ "base64",
+ "console_error_panic_hook",
+ "js-sys",
+ "serde",
+ "serde-wasm-bindgen",
+ "serde_json",
+ "tectonic_errors",
+ "tectonic_status_base",
+ "wasm-bindgen",
+ "web-sys",
 ]
 
 [[package]]
@@ -4346,6 +4374,12 @@ dependencies = [
  "thiserror 2.0.11",
  "zopfli",
 ]
+
+[[package]]
+name = "zlib-rs"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8b20717f0917c908dc63de2e44e97f1e6b126ca58d0e391cee86d504eb8fbd05"
 
 [[package]]
 name = "zopfli"

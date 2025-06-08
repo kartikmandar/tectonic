@@ -4,7 +4,9 @@
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
+#ifndef __wasm__
 #include <stdlib.h>
+#endif
 typedef struct ttbc_input_handle_t ttbc_input_handle_t;
 typedef struct ttbc_output_handle_t ttbc_output_handle_t;
 typedef ttbc_input_handle_t *rust_input_handle_t;

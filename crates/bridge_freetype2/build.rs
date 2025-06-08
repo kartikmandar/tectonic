@@ -6,6 +6,7 @@
 //! existing work done in the other freetype-sys crates, preferably just using
 //! them directly instead of duplicating effort.
 
+use std::env;
 use tectonic_dep_support::{Configuration, Dependency, Spec};
 
 struct Freetype2Spec;
@@ -21,21 +22,29 @@ impl Spec for Freetype2Spec {
 }
 
 fn main() {
-    let cfg = Configuration::default();
-    let dep = Dependency::probe(Freetype2Spec, &cfg);
+    let target = env::var("TARGET").unwrap();
 
-    // This is the key. What we print here will be propagated into depending
-    // crates' build scripts as the environment variable DEP_FREETYPE2_INCLUDE_PATH,
-    // allowing them to find the headers internally. If/when we start vendoring
-    // FreeType, this can become $OUT_DIR.
-    let mut sep = "cargo:include-path=";
+    // Skip system dependency probing for WASM targets
+    if !target.starts_with("wasm32") {
+        let cfg = Configuration::default();
+        let dep = Dependency::probe(Freetype2Spec, &cfg);
 
-    dep.foreach_include_path(|p| {
-        print!("{}{}", sep, p.to_str().unwrap());
-        sep = ";";
-    });
+        // This is the key. What we print here will be propagated into depending
+        // crates' build scripts as the environment variable DEP_FREETYPE2_INCLUDE_PATH,
+        // allowing them to find the headers internally. If/when we start vendoring
+        // FreeType, this can become $OUT_DIR.
+        let mut sep = "cargo:include-path=";
 
-    println!();
+        dep.foreach_include_path(|p| {
+            print!("{}{}", sep, p.to_str().unwrap());
+            sep = ";";
+        });
 
-    dep.emit();
+        println!();
+
+        dep.emit();
+    } else {
+        // For WASM targets, provide minimal stubs
+        println!("cargo:include-path=");
+    }
 }

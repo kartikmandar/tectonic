@@ -185,14 +185,21 @@ impl IoProvider for FilesystemIo {
             Err(e) => {
                 return if e.kind() == io::ErrorKind::NotFound {
                     OpenResult::NotAvailable
-                } else if let Some(libc::ENOTDIR) = e.raw_os_error() {
-                    // xdvipdfmx has a code path that basically tries to open a
-                    // font path assuming that it is a directory, which causes an
-                    // ENOTDIR to happen (i.e., it tries the equivalent of
-                    // open("/etc/passwd/subdir"). This circumstance is harmless.
-                    OpenResult::NotAvailable
                 } else {
-                    OpenResult::Err(e.into())
+                    #[cfg(not(target_arch = "wasm32"))]
+                    let is_enotdir = e.raw_os_error() == Some(libc::ENOTDIR);
+                    #[cfg(target_arch = "wasm32")]
+                    let is_enotdir = false;
+                    
+                    if is_enotdir {
+                        // xdvipdfmx has a code path that basically tries to open a
+                        // font path assuming that it is a directory, which causes an
+                        // ENOTDIR to happen (i.e., it tries the equivalent of
+                        // open("/etc/passwd/subdir"). This circumstance is harmless.
+                        OpenResult::NotAvailable
+                    } else {
+                        OpenResult::Err(e.into())
+                    }
                 };
             }
         };
