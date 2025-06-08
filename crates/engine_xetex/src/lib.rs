@@ -255,6 +255,109 @@ pub mod c_api {
             input_file_name: *const libc::c_char,
             build_date: u64,
         ) -> libc::c_int;
+
+        // State capture functions for incremental compilation
+        pub fn tt_xetex_capture_memory_snapshot(
+            buffer: *mut u8,
+            buffer_size: *mut usize,
+        ) -> libc::c_int;
+
+        pub fn tt_xetex_restore_memory_snapshot(
+            buffer: *const u8,
+            buffer_size: usize,
+        ) -> libc::c_int;
+
+        pub fn tt_xetex_capture_eqtb_state(
+            buffer: *mut u8,
+            buffer_size: *mut usize,
+        ) -> libc::c_int;
+
+        pub fn tt_xetex_restore_eqtb_state(
+            buffer: *const u8,
+            buffer_size: usize,
+        ) -> libc::c_int;
+
+        pub fn tt_xetex_capture_memory_state(
+            lo_mem_max: *mut libc::c_int,
+            hi_mem_min: *mut libc::c_int,
+            mem_end: *mut libc::c_int,
+            avail: *mut libc::c_int,
+            var_used: *mut libc::c_int,
+            dyn_used: *mut libc::c_int,
+        ) -> libc::c_int;
+
+        pub fn tt_xetex_restore_memory_state(
+            lo_mem_max: libc::c_int,
+            hi_mem_min: libc::c_int,
+            mem_end: libc::c_int,
+            avail: libc::c_int,
+            var_used: libc::c_int,
+            dyn_used: libc::c_int,
+        ) -> libc::c_int;
+
+        pub fn tt_xetex_capture_input_state(
+            buffer: *mut u8,
+            buffer_size: *mut usize,
+            line: *mut libc::c_int,
+            first: *mut libc::c_int,
+            last: *mut libc::c_int,
+            cur_cmd: *mut u8,
+            cur_chr: *mut libc::c_int,
+            cur_cs: *mut libc::c_int,
+            cur_tok: *mut libc::c_int,
+        ) -> libc::c_int;
+
+        pub fn tt_xetex_restore_input_state(
+            buffer: *const u8,
+            buffer_size: usize,
+            line: libc::c_int,
+            first: libc::c_int,
+            last: libc::c_int,
+            cur_cmd: u8,
+            cur_chr: libc::c_int,
+            cur_cs: libc::c_int,
+            cur_tok: libc::c_int,
+        ) -> libc::c_int;
+
+        pub fn tt_xetex_capture_output_state(
+            total_pages: *mut libc::c_int,
+            max_v: *mut libc::c_int,
+            max_h: *mut libc::c_int,
+            max_push: *mut libc::c_int,
+            cur_h: *mut libc::c_int,
+            cur_v: *mut libc::c_int,
+            dead_cycles: *mut libc::c_int,
+            doing_leaders: *mut bool,
+        ) -> libc::c_int;
+
+        pub fn tt_xetex_restore_output_state(
+            total_pages: libc::c_int,
+            max_v: libc::c_int,
+            max_h: libc::c_int,
+            max_push: libc::c_int,
+            cur_h: libc::c_int,
+            cur_v: libc::c_int,
+            dead_cycles: libc::c_int,
+            doing_leaders: bool,
+        ) -> libc::c_int;
+
+        pub fn tt_xetex_capture_font_state(
+            cur_f: *mut libc::c_int,
+            cur_c: *mut libc::c_int,
+            font_mem_size: *mut libc::c_int,
+            font_max: *mut libc::c_int,
+        ) -> libc::c_int;
+
+        pub fn tt_xetex_restore_font_state(
+            cur_f: libc::c_int,
+            cur_c: libc::c_int,
+            font_mem_size: libc::c_int,
+            font_max: libc::c_int,
+        ) -> libc::c_int;
+
+        pub fn tt_xetex_get_current_source_position() -> libc::c_int;
+
+        pub fn tt_xetex_is_synctex_enabled() -> bool;
     }
 }
 
