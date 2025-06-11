@@ -11,6 +11,9 @@
 //! - Character-level position tracking for WYSIWYG editing
 //! - Typst-inspired constrained memoization
 
+pub mod memoization;
+pub use memoization::*;
+
 #[cfg(all(target_wasm, feature = "wasm"))]
 use wasm_bindgen::prelude::*;
 
@@ -2841,18 +2844,18 @@ pub fn create_endian_aware_memory_state(
 #[cfg(all(target_wasm, feature = "wasm"))]
 pub fn validate_tex_state(state: &TeXEngineState) -> bool {
     // Validate memory boundaries
-    if state.memory_data.lo_mem_max >= state.memory_data.hi_mem_min {
+    if state.memory_state.lo_mem_max >= state.memory_state.hi_mem_min {
         return false;
     }
-    if state.memory_data.hi_mem_min >= state.memory_data.mem_end {
+    if state.memory_state.hi_mem_min >= state.memory_state.mem_end {
         return false;
     }
-    if state.memory_data.avail > state.memory_data.mem_end {
+    if state.memory_state.avail > state.memory_state.mem_end {
         return false;
     }
     
     // Validate output state ranges
-    if state.output_state.current_page == 0 {
+    if state.output_state.total_pages == 0 {
         return false;
     }
     if state.output_state.max_h <= 0 || state.output_state.max_v <= 0 {
@@ -2895,15 +2898,15 @@ pub fn calculate_state_checksum(state: &TeXEngineState) -> u32 {
     let mut checksum: u32 = 0xDEADBEEF;
     
     // Hash key state components
-    for &val in &state.eqtb_data.integer_params {
+    for (&_key, &val) in &state.eqtb_state.int_params {
         checksum = checksum.wrapping_mul(31).wrapping_add(val as u32);
     }
     
-    for &val in &state.memory_data.mem_data {
+    for &val in &state.memory_state.mem_data {
         checksum = checksum.wrapping_mul(17).wrapping_add(val as u32);
     }
     
-    checksum = checksum.wrapping_mul(13).wrapping_add(state.output_state.current_page as u32);
+    checksum = checksum.wrapping_mul(13).wrapping_add(state.output_state.total_pages as u32);
     checksum = checksum.wrapping_mul(11).wrapping_add(state.font_state.cur_f as u32);
     checksum = checksum.wrapping_mul(7).wrapping_add(state.macro_state.cs_count as u32);
     
@@ -2921,16 +2924,16 @@ pub fn estimate_state_memory_size(state: &TeXEngineState) -> usize {
     let mut size = 0;
     
     // EqTB data
-    size += state.eqtb_data.integer_params.len() * 4;
-    size += state.eqtb_data.dimension_params.len() * 4;
-    size += state.eqtb_data.glue_params.len() * 4;
-    size += state.eqtb_data.token_lists.len() * 4;
-    size += state.eqtb_data.box_registers.len() * 4;
-    size += state.eqtb_data.cat_codes.len() * 4;
+    size += state.eqtb_state.int_params.len() * 4;
+    size += state.eqtb_state.dimen_params.len() * 4;
+    size += state.eqtb_state.eqtb_data.len();
+    size += state.eqtb_state.cat_codes.len() * 4;
+    size += state.eqtb_state.math_codes.len() * 4;
+    // Size accounted for above
     size += state.eqtb_data.math_codes.len() * 4;
     
     // Memory data
-    size += state.memory_data.mem_data.len();
+    size += state.memory_state.mem_data.len();
     size += 24; // mem state integers
     
     // Input state  
@@ -2985,19 +2988,19 @@ pub fn compare_states_for_incremental(state1: &TeXEngineState, state2: &TeXEngin
     // components match, allowing for differences in metadata/timestamps
     
     // Memory state must match exactly
-    if state1.memory_data.mem_data != state2.memory_data.mem_data {
+    if state1.memory_state.mem_data != state2.memory_state.mem_data {
         return false;
     }
-    if state1.memory_data.lo_mem_max != state2.memory_data.lo_mem_max ||
-       state1.memory_data.hi_mem_min != state2.memory_data.hi_mem_min ||
-       state1.memory_data.mem_end != state2.memory_data.mem_end {
+    if state1.memory_state.lo_mem_max != state2.memory_state.lo_mem_max ||
+       state1.memory_state.hi_mem_min != state2.memory_state.hi_mem_min ||
+       state1.memory_state.mem_end != state2.memory_state.mem_end {
         return false;
     }
     
     // EqTB parameters must match
-    if state1.eqtb_data.integer_params != state2.eqtb_data.integer_params ||
-       state1.eqtb_data.dimension_params != state2.eqtb_data.dimension_params ||
-       state1.eqtb_data.glue_params != state2.eqtb_data.glue_params {
+    if state1.eqtb_state.int_params != state2.eqtb_state.int_params ||
+       state1.eqtb_state.dimen_params != state2.eqtb_state.dimen_params ||
+       state1.eqtb_state.eqtb_data != state2.eqtb_state.eqtb_data {
         return false;
     }
     
@@ -3010,13 +3013,13 @@ pub fn compare_states_for_incremental(state1: &TeXEngineState, state2: &TeXEngin
     // Output position must match
     if state1.output_state.cur_h != state2.output_state.cur_h ||
        state1.output_state.cur_v != state2.output_state.cur_v ||
-       state1.output_state.current_page != state2.output_state.current_page {
+       state1.output_state.total_pages != state2.output_state.total_pages {
         return false;
     }
     
     // Input position must match
-    if state1.input_state.current_line != state2.input_state.current_line ||
-       state1.input_state.current_position != state2.input_state.current_position {
+    if state1.input_state.line != state2.input_state.line ||
+       state1.input_state.first != state2.input_state.first {
         return false;
     }
     
@@ -3339,7 +3342,7 @@ Hello WASM World
                 cat_codes: vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
                 math_codes: vec![100, 101, 102, 103, 104],
             },
-            memory_data: MemoryState {
+            memory_state: MemoryState {
                 mem_data: vec![0xDE, 0xAD, 0xBE, 0xEF, 0xCA, 0xFE, 0xBA, 0xBE],
                 lo_mem_max: 1000,
                 hi_mem_min: 5000,
@@ -3357,8 +3360,8 @@ Hello WASM World
                         buffer_position: 256,
                     }
                 ],
-                current_line: 42,
-                current_position: 1337,
+                line: 42,
+                first: 1337,
                 buffer_data: vec![72, 101, 108, 108, 111], // "Hello"
                 file_stack_depth: 1,
                 token_buffer: vec![0x12, 0x34, 0x56, 0x78],
@@ -3418,7 +3421,7 @@ Hello WASM World
             synctex_state: SyncTexState {
                 synctex_enabled: true,
                 current_tag: 42,
-                current_line: 1337,
+                line: 1337,
                 position_data: vec![
                     (100, 200, 50, 25),  // (h, v, width, height)
                     (150, 225, 60, 25),
@@ -3462,21 +3465,21 @@ Hello WASM World
         assert_eq!(restored_state.eqtb_data.cat_codes, tex_state.eqtb_data.cat_codes);
         
         // Memory state validation
-        assert_eq!(restored_state.memory_data.mem_data, tex_state.memory_data.mem_data);
-        assert_eq!(restored_state.memory_data.lo_mem_max, tex_state.memory_data.lo_mem_max);
-        assert_eq!(restored_state.memory_data.hi_mem_min, tex_state.memory_data.hi_mem_min);
-        assert_eq!(restored_state.memory_data.avail, tex_state.memory_data.avail);
+        assert_eq!(restored_state.memory_state.mem_data, tex_state.memory_state.mem_data);
+        assert_eq!(restored_state.memory_state.lo_mem_max, tex_state.memory_state.lo_mem_max);
+        assert_eq!(restored_state.memory_state.hi_mem_min, tex_state.memory_state.hi_mem_min);
+        assert_eq!(restored_state.memory_state.avail, tex_state.memory_state.avail);
         
         // Input state validation
-        assert_eq!(restored_state.input_state.current_line, tex_state.input_state.current_line);
-        assert_eq!(restored_state.input_state.current_position, tex_state.input_state.current_position);
+        assert_eq!(restored_state.input_state.line, tex_state.input_state.line);
+        assert_eq!(restored_state.input_state.first, tex_state.input_state.first);
         assert_eq!(restored_state.input_state.buffer_data, tex_state.input_state.buffer_data);
         assert_eq!(restored_state.input_state.cur_cmd, tex_state.input_state.cur_cmd);
         assert_eq!(restored_state.input_state.cur_chr, tex_state.input_state.cur_chr);
         
         // Output state validation
         assert_eq!(restored_state.output_state.dvi_buffer, tex_state.output_state.dvi_buffer);
-        assert_eq!(restored_state.output_state.current_page, tex_state.output_state.current_page);
+        assert_eq!(restored_state.output_state.total_pages, tex_state.output_state.total_pages);
         assert_eq!(restored_state.output_state.max_v, tex_state.output_state.max_v);
         assert_eq!(restored_state.output_state.max_h, tex_state.output_state.max_h);
         assert_eq!(restored_state.output_state.cur_h, tex_state.output_state.cur_h);
