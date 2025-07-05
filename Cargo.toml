@@ -69,7 +69,7 @@ crate-type = ["cdylib", "rlib"]
 byte-unit = "^5.0"
 cfg-if = "1.0"
 error-chain = "^0.12"
-flate2 = { version = "^1.0.19", default-features = false, features = ["zlib-rs"] }
+flate2 = { version = "^1.0.19", default-features = false, features = ["zlib-rs"], optional = true }
 lazy_static = "^1.4"
 open = { version = "^5.0", optional = true }
 quick-xml = "0.37"
@@ -86,6 +86,7 @@ base64 = { version = "0.22", optional = true }
 console_error_panic_hook = { version = "0.1", optional = true }
 js-sys = { version = "0.3", optional = true }
 getrandom = { version = "0.2", features = ["js"], optional = true }
+async-trait = { version = "0.1", optional = true }
 libc = "0.2"
 clap = { version = "4.5.1", features = ["derive"] }
 tectonic_bridge_core = { path = "crates/bridge_core", version = "0.0.0-dev.0" }
@@ -119,7 +120,7 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 [features]
-default = ["geturl-reqwest", "serialization", "cli"]
+default = ["geturl-reqwest", "serialization", "cli", "flate2"]
 
 # CLI features that require networking and file watching
 cli = ["tokio", "watchexec", "watchexec-filterer-globset", "watchexec-signals", "watchexec-supervisor", "open"]
@@ -146,7 +147,7 @@ native-tls-vendored = [
 profile = []
 
 # WebAssembly support with optional dependencies
-wasm = ["wasm-bindgen", "web-sys", "serde-wasm-bindgen", "serde_json", "base64", "console_error_panic_hook", "js-sys", "getrandom", "siphasher"]
+wasm = ["wasm-bindgen", "web-sys", "serde-wasm-bindgen", "serde_json", "base64", "console_error_panic_hook", "js-sys", "getrandom", "siphasher", "flate2", "async-trait"]
 
 # SIMD support for WebAssembly (uses core::arch::wasm32 intrinsics)
 simd = []
